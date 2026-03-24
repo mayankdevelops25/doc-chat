@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Doc Chat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f0eb;
+      color: #2a2520;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    canvas#particles {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 780px;
+      height: 95vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1512;
+      letter-spacing: -0.5px;
+    }
+
+    .header h1 span { color: #7c6af7; }
+
+    .clear-btn {
+      background: transparent;
+      border: 1.5px solid #d4cdc6;
+      color: #9a9089;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .clear-btn:hover {
+      border-color: #e05c5c;
+      color: #e05c5c;
+      transform: scale(1.03);
+    }
+
+    .clear-btn:active { transform: scale(0.97); }
+
+    .upload-area {
+      border: 1.5px dashed #c8c0b8;
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+
+    .upload-area:hover {
+      border-color: #7c6af7;
+      background: rgba(255,255,255,0.8);
+    }
+
+    .upload-area input[type="file"] { display: none; }
+
+    .upload-btn {
+      background: linear-gradient(135deg, #7c6af7, #5b4de0);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .upload-btn:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124,106,247,0.3);
+    }
+
+    .upload-btn:active { transform: translateY(0); }
+
+    #file-name { font-size: 13px; color: #9a9089; flex: 1; }
+    #upload-status { font-size: 13px; font-weight: 500; }
+
+    .docs-list { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .doc-pill {
+      background: rgba(255,255,255,0.6);
+      border: 1.5px solid #d4cdc6;
+      color: #7a7068;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      backdrop-filter: blur(4px);
+    }
+
+    .doc-pill:hover {
+      border-color: #7c6af7;
+      color: #7c6af7;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(124,106,247,0.15);
+    }
+
+    .doc-pill.active {
+      background: linear-gradient(135deg, rgba(124,106,247,0.12), rgba(91,77,224,0.08));
+      border-color: #7c6af7;
+      color: #5b4de0;
+      font-weight: 600;
+      box-shadow: 0 3px 10px rgba(124,106,247,0.2);
+    }
+
+    .chat-box {
+      flex: 1;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border: 1px solid rgba(200,192,184,0.6);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+
+    .chat-box::-webkit-scrollbar { width: 4px; }
+    .chat-box::-webkit-scrollbar-track { background: transparent; }
+    .chat-box::-webkit-scrollbar-thumb { background: #d4cdc6; border-radius: 4px; }
+
+    .message {
+      max-width: 82%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.65;
+      animation: popIn 0.2s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(6px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .message.user {
+      background: linear-gradient(135deg, #7c6af7, #5b4de0);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 14px rgba(124,106,247,0.3);
+    }
+
+    .message.bot {
+      background: rgba(255,255,255,0.85);
+      color: #2a2520;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border: 1px solid #e8e2dc;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .message.bot.thinking {
+      color: #b0a89e;
+      font-style: italic;
+      background: rgba(255,255,255,0.5);
+    }
+
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+
+    #question {
+      flex: 1;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(8px);
+      border: 1.5px solid #d4cdc6;
+      border-radius: 12px;
+      padding: 13px 18px;
+      color: #2a2520;
+      font-size: 14px;
+      outline: none;
+      resize: none;
+      font-family: 'Segoe UI', sans-serif;
+      line-height: 1.5;
+      max-height: 120px;
+      transition: all 0.2s;
+    }
+
+    #question:focus {
+      border-color: #7c6af7;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 0 0 3px rgba(124,106,247,0.1);
+    }
+
+    #question::placeholder { color: #b0a89e; }
+
+    #send-btn {
+      background: linear-gradient(135deg, #7c6af7, #5b4de0);
+      color: white;
+      border: none;
+      padding: 13px 22px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      white-space: nowrap;
+      font-family: 'Segoe UI', sans-serif;
+      box-shadow: 0 4px 12px rgba(124,106,247,0.3);
+    }
+
+    #send-btn:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(124,106,247,0.4);
+    }
+
+    #send-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 6px rgba(124,106,247,0.2);
+    }
+
+    #send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #c8c0b8;
+    }
+
+    .empty-state .icon { font-size: 40px; }
+    .empty-state p { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+
+  <div class="container">
+    <div class="header">
+      <h1>Doc <span>Chat</span></h1>
+      <button class="clear-btn" onclick="clearChat()">Clear chat</button>
+    </div>
+
+    <div class="upload-area">
+      <input type="file" id="file-input" accept=".pdf,.txt"/>
+      <label for="file-input" class="upload-btn">Upload Document</label>
+      <span id="file-name">No file chosen</span>
+      <span id="upload-status"></span>
+    </div>
+
+    <div class="docs-list" id="docs-list"></div>
+
+    <div class="chat-box" id="chat-box">
+      <div class="empty-state" id="empty-state">
+        <div class="icon">📄</div>
+        <p>Upload a document and start asking questions</p>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <textarea id="question" placeholder="Ask anything about your document..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // Particles
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    function createParticle() {
+      return {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 2.5 + 0.5,
+        dx: (Math.random() - 0.5) * 0.4,
+        dy: (Math.random() - 0.5) * 0.4,
+        alpha: Math.random() * 0.4 + 0.1
+      };
+    }
+
+    for (let i = 0; i < 60; i++) particles.push(createParticle());
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(124, 106, 247, ${p.alpha})`;
+        ctx.fill();
+      });
+
+      // Draw soft connecting lines between nearby particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(124, 106, 247, ${0.08 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(animateParticles);
+    }
+
+    animateParticles();
+
+    // App logic
+    const fileInput = document.getElementById('file-input');
+    const fileName = document.getElementById('file-name');
+    const uploadStatus = document.getElementById('upload-status');
+    const chatBox = document.getElementById('chat-box');
+    const questionInput = document.getElementById('question');
+    const sendBtn = document.getElementById('send-btn');
+    const docsList = document.getElementById('docs-list');
+
+    let chatHistory = [];
+    let activeCollection = null;
+
+    loadDocs();
+
+    async function loadDocs() {
+      try {
+        const res = await fetch('/documents');
+        const docs = await res.json();
+        renderDocs(docs);
+      } catch(e) {}
+    }
+
+    function renderDocs(docs) {
+      docsList.innerHTML = '';
+      docs.forEach(doc => {
+        const pill = document.createElement('div');
+        pill.className = 'doc-pill' + (doc.collection === activeCollection ? ' active' : '');
+        pill.textContent = doc.filename;
+        pill.title = `${doc.chunks} chunks`;
+        pill.onclick = () => switchDoc(doc);
+        docsList.appendChild(pill);
+      });
+    }
+
+    function switchDoc(doc) {
+      activeCollection = doc.collection;
+      chatHistory = [];
+      loadDocs();
+      clearChatBox();
+      addMessage('bot', `Switched to "${doc.filename}". Ask me anything about it!`);
+    }
+
+    questionInput.addEventListener('input', () => {
+      questionInput.style.height = 'auto';
+      questionInput.style.height = Math.min(questionInput.scrollHeight, 120) + 'px';
+    });
+
+    questionInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      fileName.textContent = file.name;
+      uploadStatus.textContent = 'Uploading...';
+      uploadStatus.style.color = '#b0a89e';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        uploadStatus.textContent = '✓ Ready';
+        uploadStatus.style.color = '#5aab6e';
+        renderDocs(data.documents);
+        const newDoc = data.documents.find(d => d.filename === file.name);
+        if (newDoc) switchDoc(newDoc);
+      } catch (e) {
+        uploadStatus.textContent = '✗ Failed';
+        uploadStatus.style.color = '#e05c5c';
+      }
+    });
+
+    async function sendMessage() {
+      const question = questionInput.value.trim();
+      if (!question) return;
+      if (!activeCollection) {
+        addMessage('bot', 'Please upload or select a document first.');
+        return;
+      }
+
+      addMessage('user', question);
+      chatHistory.push({ role: 'user', content: question });
+      questionInput.value = '';
+      questionInput.style.height = 'auto';
+      sendBtn.disabled = true;
+
+      const thinking = addMessage('bot', 'Thinking...', 'thinking');
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, history: chatHistory, collection: activeCollection })
+        });
+        const data = await res.json();
+        thinking.remove();
+        addMessage('bot', data.answer);
+        chatHistory.push({ role: 'assistant', content: data.answer });
+      } catch (e) {
+        thinking.remove();
+        addMessage('bot', 'Something went wrong. Please try again.');
+      }
+
+      sendBtn.disabled = false;
+    }
+
+    function addMessage(role, text, extra = '') {
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.remove();
+      const div = document.createElement('div');
+      div.className = `message ${role} ${extra}`;
+      div.textContent = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return div;
+    }
+
+    function clearChatBox() {
+      chatBox.innerHTML = '';
+      chatHistory = [];
+    }
+
+    function clearChat() {
+      clearChatBox();
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.id = 'empty-state';
+      empty.innerHTML = '<div class="icon">📄</div><p>Upload a document and start asking questions</p>';
+      chatBox.appendChild(empty);
+    }
+  </script>
+</body>
+</html>

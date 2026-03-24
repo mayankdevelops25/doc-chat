@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pypdf
+python-dotenv
+chromadb
+langchain==0.2.16
+langchain-community==0.2.16
+langchain-text-splitters==0.2.4
+langchain-google-genai==1.0.10
+google-generativeai
+groq
