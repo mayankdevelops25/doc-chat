@@ -11,10 +11,10 @@ load_dotenv()
 
 CHROMA_PATH = "chroma_db"
 DOCS_INDEX = "uploaded_docs.json"
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 class GeminiEmbeddings(Embeddings):
     def embed_documents(self, texts):
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         result = genai.embed_content(
             model="models/gemini-embedding-001",
             content=texts
@@ -22,6 +22,7 @@ class GeminiEmbeddings(Embeddings):
         return result["embedding"] if isinstance(texts, str) else [r for r in result["embedding"]]
 
     def embed_query(self, text):
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         result = genai.embed_content(
             model="models/gemini-embedding-001",
             content=text
@@ -39,6 +40,7 @@ def save_docs_index(docs):
         json.dump(docs, f)
 
 def ingest_document(file_path: str):
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     filename = os.path.basename(file_path)
     collection_name = filename.replace(" ", "_").replace(".", "_")
 
@@ -67,7 +69,11 @@ def ingest_document(file_path: str):
 
     docs = get_docs_index()
     if not any(d["filename"] == filename for d in docs):
-        docs.append({"filename": filename, "collection": collection_name, "chunks": len(chunks)})
+        docs.append({
+            "filename": filename,
+            "collection": collection_name,
+            "chunks": len(chunks)
+        })
         save_docs_index(docs)
 
     return f"Successfully ingested {len(chunks)} chunks from {filename}"

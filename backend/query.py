@@ -8,11 +8,10 @@ import os
 load_dotenv()
 
 CHROMA_PATH = "chroma_db"
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 class GeminiEmbeddings(Embeddings):
     def embed_documents(self, texts):
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         result = genai.embed_content(
             model="models/gemini-embedding-001",
             content=texts
@@ -20,6 +19,7 @@ class GeminiEmbeddings(Embeddings):
         return result["embedding"] if isinstance(texts, str) else [r for r in result["embedding"]]
 
     def embed_query(self, text):
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         result = genai.embed_content(
             model="models/gemini-embedding-001",
             content=text
@@ -27,6 +27,9 @@ class GeminiEmbeddings(Embeddings):
         return result["embedding"]
 
 def query_document(question: str, collection_name: str, history: list = []):
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
     embeddings = GeminiEmbeddings()
 
     db = Chroma(
