@@ -382,6 +382,13 @@
     const sendBtn = document.getElementById('send-btn');
     const docsList = document.getElementById('docs-list');
 
+    // Session isolation: each browser gets its own persistent session ID
+    let sessionId = localStorage.getItem('doc_chat_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('doc_chat_session_id', sessionId);
+    }
+
     let chatHistory = [];
     let activeCollection = null;
 
@@ -389,7 +396,7 @@
 
     async function loadDocs() {
       try {
-        const res = await fetch('/documents');
+        const res = await fetch(`/documents?session_id=${sessionId}`);
         const docs = await res.json();
         renderDocs(docs);
       } catch(e) {}
@@ -436,6 +443,7 @@
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('session_id', sessionId);
 
       try {
         const res = await fetch('/upload', { method: 'POST', body: formData });

@@ -5,12 +5,10 @@ from langchain_core.embeddings import Embeddings
 from dotenv import load_dotenv
 import google.generativeai as genai
 import os
-import json
 
 load_dotenv()
 
 CHROMA_PATH = "chroma_db"
-DOCS_INDEX = "uploaded_docs.json"
 
 class GeminiEmbeddings(Embeddings):
     def embed_documents(self, texts):
@@ -29,20 +27,24 @@ class GeminiEmbeddings(Embeddings):
         )
         return result["embedding"]
 
-def get_docs_index():
-    if os.path.exists(DOCS_INDEX):
-        with open(DOCS_INDEX, "r") as f:
-            return json.load(f)
-    return []
+def make_collection_name(session_id: str, filename: str) -> str:
+    """
+    Build a ChromaDB-safe collection name scoped to this session.
+    ChromaDB limits: 3-63 chars, alphanumeric + underscores/hyphens/dots,
+    must start and end with alphanumeric.
+    """
+    # Use first 12 hex chars of session_id (no hyphens) as prefix
+    session_prefix = session_id.replace("-", "")[:12]
+    # Sanitize filename: spaces and dots -> underscore, truncate to 40 chars
+    name_part = filename.replace(" ", "_").replace(".", "_")[:40]
+    # Ensure name_part ends with alphanumeric
+    name_part = name_part.rstrip("_")
+    return f"s{session_prefix}_{name_part}"
 
-def save_docs_index(docs):
-    with open(DOCS_INDEX, "w") as f:
-        json.dump(docs, f)
-
-def ingest_document(file_path: str):
+def ingest_document(file_path: str, session_id: str) -> dict:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
     filename = os.path.basename(file_path)
-    collection_name = filename.replace(" ", "_").replace(".", "_")
+    collection_name = make_collection_name(session_id, filename)
 
     if file_path.endswith(".pdf"):
         loader = PyPDFLoader(file_path)
@@ -67,13 +69,8 @@ def ingest_document(file_path: str):
         collection_name=collection_name
     )
 
-    docs = get_docs_index()
-    if not any(d["filename"] == filename for d in docs):
-        docs.append({
-            "filename": filename,
-            "collection": collection_name,
-            "chunks": len(chunks)
-        })
-        save_docs_index(docs)
-
-    return f"Successfully ingested {len(chunks)} chunks from {filename}"
+    return {
+        "filename": filename,
+        "collection": collection_name,
+        "chunks": len(chunks)
+    }
