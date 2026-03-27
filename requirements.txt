@@ -3,10 +3,10 @@ uvicorn
 python-multipart
 pypdf
 python-dotenv
-chromadb
-langchain==0.2.16
-langchain-community==0.2.16
-langchain-text-splitters==0.2.4
-langchain-google-genai==1.0.10
+chromadb==0.5.23
+langchain==0.3.25
+langchain-community==0.3.24
+langchain-text-splitters==0.3.5
+langchain-google-genai==2.1.4
 google-generativeai
 groq

@@ -1,5 +1,5 @@
 from langchain_community.vectorstores import Chroma
-from langchain.embeddings.base import Embeddings
+from langchain_core.embeddings import Embeddings
 from dotenv import load_dotenv
 import google.generativeai as genai
 from groq import Groq

@@ -1,7 +1,7 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain.embeddings.base import Embeddings
+from langchain_core.embeddings import Embeddings
 from dotenv import load_dotenv
 import google.generativeai as genai
 import os
