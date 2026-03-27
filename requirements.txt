@@ -5,8 +5,8 @@ pypdf
 python-dotenv
 chromadb==0.5.23
 langchain==0.3.25
-langchain-community==0.3.24
-langchain-text-splitters==0.3.5
-langchain-google-genai==2.1.4
+langchain-community
+langchain-text-splitters
+langchain-google-genai
 google-generativeai
 groq
